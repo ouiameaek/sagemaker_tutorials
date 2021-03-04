@@ -1,0 +1,60 @@
+#!/usr/bin/env python
+
+import argparse
+import os
+import config as cf
+import preprocess as pp
+import model as m
+
+
+def parse_args():
+
+    parser = argparse.ArgumentParser()
+
+    # hyperparameters sent by the client are passed as command-line arguments to the script
+    parser.add_argument('--context_length', type=int, default=140)
+    parser.add_argument('--num_hidden_dimensions', type=int, default=5)
+    parser.add_argument('--len_hidden_dimensions', type=bool, default=38)
+
+    parser.add_argument('--epochs', type=bool, default=20)
+    parser.add_argument('--batch_size', type=bool, default=512)
+    parser.add_argument('--num_batches_per_epoch', type=int, default=217)
+    parser.add_argument('--learning_rate', type=float, default=6e-05)
+    
+    # data, model, and output directories
+    parser.add_argument('--output_data_dir', type=str, default=os.environ.get('SM_OUTPUT_DATA_DIR'))
+    parser.add_argument('--model_dir', type=str, default=os.environ.get('SM_MODEL_DIR'))
+    parser.add_argument('--train', type=str, default=os.environ.get('SM_CHANNEL_TRAIN'))
+    parser.add_argument('--test', type=str, default=os.environ.get('SM_CHANNEL_TEST'))
+
+    return parser.parse_known_args()
+
+    
+if __name__ == "__main__":
+
+    args, _ = parse_args()
+    
+    hyperparameters = {'context_length': args.context_length,
+                       'num_hidden_dimensions': args.num_hidden_dimensions,
+                       'len_hidden_dimensions': args.len_hidden_dimensions,
+                       'epochs': args.epochs,
+                       'batch_size': args.batch_size,
+                       'num_batches_per_epoch': args.num_batches_per_epoch,
+                       'learning_rate': args.learning_rate}
+
+    print(hyperparameters)
+
+    train_dir = os.environ["SM_CHANNEL_TRAIN"]
+    model_dir = os.environ["SM_MODEL_DIR"]
+    data_dir = os.environ["SM_DATA_DIR"]
+
+    config_file = "dev.yml"
+    config = cf.ProgramConfiguration(config_file, "functional.yml")
+    
+    cutoff_week_id = 202001
+
+    # Preprocess
+    pp.format_cutoff_train_data(train_dir, cutoff_week_id, config)
+    
+    # Launch model training
+    m.train_model_fn(cutoff_week_id, config, hyperparameters)

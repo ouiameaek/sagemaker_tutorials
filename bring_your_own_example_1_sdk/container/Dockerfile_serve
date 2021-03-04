@@ -1,0 +1,12 @@
+# Use any base image you'd like here, this is a private one
+FROM ***.dkr.ecr.eu-west-1.amazonaws.com/mxnet-gluonts-serving-0.3.3-cpu-py3:latest
+
+COPY src/ /opt/program
+COPY conf/ /opt/program
+COPY container/requirements_serve.txt /opt/program
+
+RUN pip install -r requirements_serve.txt
+
+ENV SM_CHANNEL_PRED /opt/ml/input/data/predicting
+
+ENTRYPOINT ["python"]
